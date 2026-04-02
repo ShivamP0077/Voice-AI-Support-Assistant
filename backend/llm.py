@@ -48,3 +48,41 @@ def generate_response(user_query: str, context_chunks: list[str]) -> str:
     )
 
     return chat_completion.choices[0].message.content
+
+
+def generate_response_stream(user_query: str, context_chunks: list[str]):
+    """Generate an LLM response using Groq with stream=True.
+
+    Args:
+        user_query: The customer's question.
+        context_chunks: Relevant text chunks.
+
+    Yields:
+        Text chunks as they are generated.
+    """
+    context_block = "\n\n".join(
+        f"[Context {i+1}]: {chunk}" for i, chunk in enumerate(context_chunks)
+    )
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": (
+                f"### Relevant Context:\n{context_block}\n\n"
+                f"### Customer Question:\n{user_query}"
+            ),
+        },
+    ]
+
+    chat_completion = _client.chat.completions.create(
+        model="meta-llama/llama-4-scout-17b-16e-instruct",
+        messages=messages,
+        temperature=0.4,
+        max_tokens=512,
+        stream=True,
+    )
+
+    for chunk in chat_completion:
+        if chunk.choices[0].delta.content is not None:
+            yield chunk.choices[0].delta.content

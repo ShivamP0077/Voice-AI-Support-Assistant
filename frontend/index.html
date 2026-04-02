@@ -423,8 +423,6 @@
     </div>
 
     <script>
-        const API_URL = "http://localhost:8000";
-
         const recordBtn = document.getElementById("recordBtn");
         const recordLabel = document.getElementById("recordLabel");
         const loading = document.getElementById("loading");
@@ -434,11 +432,22 @@
         const responseText = document.getElementById("responseText");
         const audioPlayer = document.getElementById("audioPlayer");
 
+        let globalStream = null;
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
 
-        // Toggle recording on click
+        async function initMicrophone() {
+            if (!globalStream) {
+                try {
+                    globalStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                } catch (err) {
+                    showError("Microphone access denied. Please allow microphone permissions.");
+                    throw err;
+                }
+            }
+        }
+
         recordBtn.addEventListener("click", async () => {
             if (isRecording) {
                 stopRecording();
@@ -449,8 +458,8 @@
 
         async function startRecording() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+                await initMicrophone();
+                mediaRecorder = new MediaRecorder(globalStream, { mimeType: "audio/webm" });
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = (e) => {
@@ -458,9 +467,8 @@
                 };
 
                 mediaRecorder.onstop = () => {
-                    stream.getTracks().forEach((track) => track.stop());
                     const blob = new Blob(audioChunks, { type: "audio/webm" });
-                    sendAudio(blob);
+                    sendAudioStream(blob);
                 };
 
                 mediaRecorder.start();
@@ -470,7 +478,7 @@
                 recordLabel.textContent = "🔴 Recording... Tap to stop";
                 hideError();
             } catch (err) {
-                showError("Microphone access denied. Please allow microphone permissions.");
+                console.error(err);
             }
         }
 
@@ -484,38 +492,68 @@
             recordLabel.textContent = "Tap to start recording";
         }
 
-        async function sendAudio(blob) {
-            // Show loading, hide results
-            loading.classList.add("active");
-            results.classList.remove("active");
+        async function sendAudioStream(blob) {
+            // Hide loading completely because text streams instantly
+            loading.classList.remove("active");
+            results.classList.add("active");
+            
+            // Reset fields
+            transcriptText.textContent = "Processing audio...";
+            responseText.textContent = "";
+            audioPlayer.src = "";
             hideError();
 
             const formData = new FormData();
             formData.append("audio", blob, "recording.webm");
 
             try {
-                const res = await fetch(`${API_URL}/query`, {
+                const res = await fetch(`/api/v2/query`, {
                     method: "POST",
                     body: formData,
                 });
 
                 if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.detail || `Server error (${res.status})`);
+                    throw new Error(`Server error (${res.status})`);
                 }
 
-                const data = await res.json();
+                // Read SSE stream
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let done = false;
 
-                // Populate results
-                transcriptText.textContent = data.transcript || "—";
-                responseText.textContent = data.response || "—";
-                audioPlayer.src = `${API_URL}${data.audio_url}`;
-
-                // Show results
-                loading.classList.remove("active");
-                results.classList.add("active");
+                while (!done) {
+                    const { value, done: readerDone } = await reader.read();
+                    done = readerDone;
+                    if (value) {
+                        const chunkStr = decoder.decode(value);
+                        const lines = chunkStr.split("\n");
+                        
+                        let currentEvent = null;
+                        
+                        for (let line of lines) {
+                            if (line.startsWith("event: ")) {
+                                currentEvent = line.substring(7).trim();
+                            } else if (line.startsWith("data: ")) {
+                                const dataStr = line.substring(6).trim();
+                                if (dataStr) {
+                                    const payload = JSON.parse(dataStr);
+                                    
+                                    if (currentEvent === "transcript") {
+                                        transcriptText.textContent = payload.text;
+                                    } else if (currentEvent === "text") {
+                                        responseText.textContent += payload.chunk;
+                                    } else if (currentEvent === "audio") {
+                                        audioPlayer.src = payload.url;
+                                        audioPlayer.play().catch(e => console.log("Auto-play blocked:", e));
+                                    } else if (currentEvent === "error") {
+                                        showError(payload.detail);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             } catch (err) {
-                loading.classList.remove("active");
                 showError(err.message || "Something went wrong. Please try again.");
             }
         }

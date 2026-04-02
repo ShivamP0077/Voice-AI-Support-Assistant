@@ -2,14 +2,15 @@ import os
 import uuid
 import logging
 import tempfile
+import json
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from contextlib import asynccontextmanager
 
 from backend.stt import transcribe_audio
-from backend.llm import generate_response
+from backend.llm import generate_response, generate_response_stream
 from backend.tts import synthesize_speech
 from backend.qdrant_service import initialize_collection, search
 
@@ -52,6 +53,12 @@ app.add_middleware(
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/")
+async def root():
+    """Serve the frontend HTML."""
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html"))
 
 
 @app.post("/query")
@@ -143,6 +150,57 @@ async def handle_query(audio: UploadFile = File(...)):
             "audio_url": f"/audio/{audio_filename}",
         }
     )
+
+
+@app.post("/api/v2/query")
+async def handle_query_v2_stream(audio: UploadFile = File(...)):
+    """V2 voice support pipeline with Server-Sent Events (SSE) streaming."""
+    tmp_path = None
+
+    try:
+        suffix = os.path.splitext(audio.filename or "audio.webm")[1] or ".webm"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await audio.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        logger.info(f"V2 Request: Received audio file: {audio.filename} ({len(content)} bytes)")
+    except Exception as e:
+        logger.error(f"Failed to save uploaded audio: {e}")
+        return JSONResponse(status_code=500, content={"detail": "Failed to process audio."})
+
+    async def event_generator():
+        try:
+            # 1. STT
+            transcript = transcribe_audio(tmp_path)
+            yield f"event: transcript\ndata: {json.dumps({'text': transcript})}\n\n"
+
+            # 2. Qdrant Search
+            context_chunks = search(transcript, top_k=3)
+
+            # 3. LLM Streaming
+            full_response = ""
+            for chunk in generate_response_stream(transcript, context_chunks):
+                full_response += chunk
+                yield f"event: text\ndata: {json.dumps({'chunk': chunk})}\n\n"
+
+            # 4. Generate TTS (after text finishes)
+            audio_filename = f"{uuid.uuid4().hex}.mp3"
+            audio_path = os.path.join(AUDIO_DIR, audio_filename)
+            await synthesize_speech(full_response, audio_path)
+            yield f"event: audio\ndata: {json.dumps({'url': f'/audio/{audio_filename}'})}\n\n"
+
+            # End of stream
+            yield "event: done\ndata: {}\n\n"
+
+        except Exception as e:
+            logger.error(f"Pipeline error: {e}")
+            yield f"event: error\ndata: {json.dumps({'detail': str(e)})}\n\n"
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @app.get("/audio/{filename}")
