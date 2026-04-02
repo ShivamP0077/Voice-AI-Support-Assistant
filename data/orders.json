@@ -1,1 +1,35 @@
-[]
+[
+  {
+    "order_id": "ORD1001",
+    "user_id": "U1",
+    "product": "Wireless Headphones",
+    "quantity": 1,
+    "price": 59.99,
+    "status": "delivered",
+    "order_date": "2026-03-10",
+    "delivery_date": "2026-03-20",
+    "return_window_days": 7
+  },
+  {
+    "order_id": "ORD1002",
+    "user_id": "U2",
+    "product": "Running Shoes",
+    "quantity": 2,
+    "price": 89.99,
+    "status": "shipped",
+    "order_date": "2026-03-25",
+    "delivery_date": null,
+    "return_window_days": 7
+  },
+  {
+    "order_id": "ORD1003",
+    "user_id": "U1",
+    "product": "Smartphone Case",
+    "quantity": 1,
+    "price": 15.99,
+    "status": "processing",
+    "order_date": "2026-03-30",
+    "delivery_date": null,
+    "return_window_days": 7
+  }
+]
