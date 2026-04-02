@@ -1,12 +1,534 @@
-<!-- Frontend UI placeholder -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Voice AI Support Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Voice AI Support Assistant for e-commerce — ask questions using your voice and get instant AI-powered answers.">
+    <title>🛒 E-Commerce Voice Support Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --bg-glass: rgba(255, 255, 255, 0.04);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-emerald: #10b981;
+            --accent-rose: #f43f5e;
+            --gradient-main: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --gradient-glow: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+            --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-orb-1 {
+            width: 500px; height: 500px;
+            background: var(--accent-blue);
+            top: -150px; left: -100px;
+            animation: float1 20s ease-in-out infinite;
+        }
+        .bg-orb-2 {
+            width: 400px; height: 400px;
+            background: var(--accent-purple);
+            bottom: -100px; right: -100px;
+            animation: float2 25s ease-in-out infinite;
+        }
+        .bg-orb-3 {
+            width: 300px; height: 300px;
+            background: var(--accent-emerald);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation: float3 18s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(80px, 60px) scale(1.1); }
+        }
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-60px, -80px) scale(1.15); }
+        }
+        @keyframes float3 {
+            0%, 100% { transform: translate(-50%, -50%) scale(0.8); }
+            50% { transform: translate(-40%, -60%) scale(1); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--gradient-glow);
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent-blue);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .header-badge .dot {
+            width: 6px; height: 6px;
+            background: var(--accent-emerald);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.3); }
+        }
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+            margin-bottom: 12px;
+        }
+        .header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            font-weight: 300;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Record Button */
+        .record-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        .record-btn {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            background: var(--gradient-main);
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .record-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 60px rgba(59, 130, 246, 0.3);
+        }
+        .record-btn:active {
+            transform: scale(0.95);
+        }
+        .record-btn.recording {
+            background: linear-gradient(135deg, var(--accent-rose), #e11d48);
+            animation: pulse-record 1.5s ease-in-out infinite;
+            box-shadow: 0 0 60px rgba(244, 63, 94, 0.3);
+        }
+        @keyframes pulse-record {
+            0%, 100% { box-shadow: 0 0 40px rgba(244, 63, 94, 0.3); }
+            50% { box-shadow: 0 0 80px rgba(244, 63, 94, 0.5); }
+        }
+        .record-btn .ring {
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            animation: ring-expand 3s ease-out infinite;
+        }
+        .record-btn.recording .ring {
+            border-color: rgba(244, 63, 94, 0.3);
+        }
+        @keyframes ring-expand {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .record-label {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            transition: color 0.3s;
+        }
+        .record-label.recording {
+            color: var(--accent-rose);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            animation: loading-fade 1.5s ease-in-out infinite;
+        }
+        @keyframes loading-fade {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Result Cards */
+        .results {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .results.active {
+            display: flex;
+            animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            transition: border-color 0.3s;
+        }
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .card-icon.transcript {
+            background: rgba(59, 130, 246, 0.12);
+        }
+        .card-icon.response {
+            background: rgba(139, 92, 246, 0.12);
+        }
+        .card-icon.audio {
+            background: rgba(16, 185, 129, 0.12);
+        }
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+        }
+        .card-body {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        /* Audio Player */
+        .audio-player {
+            width: 100%;
+            margin-top: 8px;
+            border-radius: 12px;
+            height: 48px;
+            outline: none;
+        }
+        audio::-webkit-media-controls-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+
+        /* Error Message */
+        .error-msg {
+            display: none;
+            text-align: center;
+            padding: 16px 24px;
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            border-radius: 12px;
+            color: var(--accent-rose);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .error-msg.active {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .header h1 { font-size: 26px; }
+            .record-btn { width: 100px; height: 100px; font-size: 32px; }
+            .container { padding: 24px 16px 40px; }
+        }
+    </style>
 </head>
 <body>
-    <h1>🛒 E-Commerce Voice Support Assistant</h1>
-    <p>Coming soon...</p>
+    <!-- Background Orbs -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-badge">
+                <span class="dot"></span>
+                AI-Powered Support
+            </div>
+            <h1>🛒 E-Commerce Voice<br>Support Assistant</h1>
+            <p>Press the microphone and ask about your orders, returns, shipping, or any policy questions.</p>
+        </header>
+
+        <!-- Record Button -->
+        <div class="record-section">
+            <button id="recordBtn" class="record-btn" title="Hold to record">
+                <span class="ring"></span>
+                🎙️
+            </button>
+            <span id="recordLabel" class="record-label">Tap to start recording</span>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMsg" class="error-msg"></div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <span class="loading-text">Processing your request...</span>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="results">
+            <!-- Transcript Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon transcript">🗣️</div>
+                    <span class="card-title">Your Question</span>
+                </div>
+                <div class="card-body" id="transcriptText">—</div>
+            </div>
+
+            <!-- Response Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon response">🤖</div>
+                    <span class="card-title">AI Response</span>
+                </div>
+                <div class="card-body" id="responseText">—</div>
+            </div>
+
+            <!-- Audio Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon audio">🔊</div>
+                    <span class="card-title">Audio Response</span>
+                </div>
+                <div class="card-body">
+                    <audio id="audioPlayer" class="audio-player" controls></audio>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Voice AI Support Assistant &middot; Powered by Groq, Qdrant &amp; edge-tts
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8000";
+
+        const recordBtn = document.getElementById("recordBtn");
+        const recordLabel = document.getElementById("recordLabel");
+        const loading = document.getElementById("loading");
+        const results = document.getElementById("results");
+        const errorMsg = document.getElementById("errorMsg");
+        const transcriptText = document.getElementById("transcriptText");
+        const responseText = document.getElementById("responseText");
+        const audioPlayer = document.getElementById("audioPlayer");
+
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // Toggle recording on click
+        recordBtn.addEventListener("click", async () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                await startRecording();
+            }
+        });
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    stream.getTracks().forEach((track) => track.stop());
+                    const blob = new Blob(audioChunks, { type: "audio/webm" });
+                    sendAudio(blob);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.classList.add("recording");
+                recordLabel.classList.add("recording");
+                recordLabel.textContent = "🔴 Recording... Tap to stop";
+                hideError();
+            } catch (err) {
+                showError("Microphone access denied. Please allow microphone permissions.");
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            recordBtn.classList.remove("recording");
+            recordLabel.classList.remove("recording");
+            recordLabel.textContent = "Tap to start recording";
+        }
+
+        async function sendAudio(blob) {
+            // Show loading, hide results
+            loading.classList.add("active");
+            results.classList.remove("active");
+            hideError();
+
+            const formData = new FormData();
+            formData.append("audio", blob, "recording.webm");
+
+            try {
+                const res = await fetch(`${API_URL}/query`, {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || `Server error (${res.status})`);
+                }
+
+                const data = await res.json();
+
+                // Populate results
+                transcriptText.textContent = data.transcript || "—";
+                responseText.textContent = data.response || "—";
+                audioPlayer.src = `${API_URL}${data.audio_url}`;
+
+                // Show results
+                loading.classList.remove("active");
+                results.classList.add("active");
+            } catch (err) {
+                loading.classList.remove("active");
+                showError(err.message || "Something went wrong. Please try again.");
+            }
+        }
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add("active");
+        }
+
+        function hideError() {
+            errorMsg.textContent = "";
+            errorMsg.classList.remove("active");
+        }
+    </script>
 </body>
 </html>
