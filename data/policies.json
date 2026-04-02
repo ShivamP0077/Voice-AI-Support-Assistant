@@ -1,22 +1,15 @@
 {
-  "return_policy": {
-    "title": "Return Policy",
-    "content": "Items can be returned within 7 days of delivery. Products must be unused and in original packaging. Refunds are processed within 5-7 business days after the returned item is received. Shipping costs for returns are borne by the customer unless the item is defective."
+  "returns": {
+    "allowed": true,
+    "window_days": 7,
+    "conditions": [
+      "Item must be unused",
+      "Original packaging required"
+    ]
   },
-  "shipping_policy": {
-    "title": "Shipping Policy",
-    "content": "Standard shipping takes 5-10 business days. Express shipping is available for an additional $9.99 and delivers within 2-3 business days. Free shipping is offered on orders above $50. Orders are processed within 1-2 business days before shipping."
+  "refunds": {
+    "method": "original payment method",
+    "processing_time_days": 5
   },
-  "refund_policy": {
-    "title": "Refund Policy",
-    "content": "Refunds are issued to the original payment method. Partial refunds may be granted for items returned in opened packaging. Digital products and gift cards are non-refundable. If a refund is not received within 10 business days, please contact support."
-  },
-  "cancellation_policy": {
-    "title": "Cancellation Policy",
-    "content": "Orders can be cancelled within 24 hours of placement at no charge. After 24 hours, a cancellation fee of 5% may apply. Orders that have already been shipped cannot be cancelled and must go through the return process instead."
-  },
-  "warranty_policy": {
-    "title": "Warranty Policy",
-    "content": "All electronic products come with a 1-year manufacturer warranty. Warranty covers defects in materials and workmanship. Accidental damage, misuse, and unauthorized repairs void the warranty. To claim warranty, contact support with your order ID and proof of purchase."
-  }
+  "support_hours": "9 AM - 6 PM IST"
 }

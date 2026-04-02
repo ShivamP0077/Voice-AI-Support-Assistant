@@ -19,39 +19,45 @@ def load_policies():
 
 
 def chunk_orders(orders):
-    """Convert each order into a flat text chunk for embedding.
-
-    Example output:
-      "Order ORD1001 for user U1: Wireless Headphones, status delivered
-       on 2026-03-20. Return window: 7 days."
-    """
+    """Convert each order into a flat text chunk for embedding."""
     chunks = []
     for order in orders:
-        delivery_info = (
-            f"on {order['delivery_date']}"
-            if order["delivery_date"]
-            else "not yet delivered"
-        )
+        delivery_info = ""
+        if order.get("delivery_date"):
+            delivery_info = f"delivered on {order['delivery_date']}."
+        elif order.get("expected_delivery"):
+            delivery_info = f"expected delivery on {order['expected_delivery']}."
+            
+        return_info = f" Return window: {order['return_window_days']} days." if order.get("return_window_days") else ""
+            
         chunk = (
             f"Order {order['order_id']} for user {order['user_id']}: "
-            f"{order['product']} (qty: {order['quantity']}, ${order['price']}), "
-            f"status {order['status']} {delivery_info}. "
-            f"Return window: {order['return_window_days']} days."
-        )
+            f"{order['item']}, status: {order['status']}, "
+            f"{delivery_info}{return_info}"
+        ).strip()
         chunks.append(chunk)
     return chunks
 
 
 def chunk_policies(policies):
-    """Convert each policy section into a flat text chunk for embedding.
-
-    Example output:
-      "Return Policy: Items can be returned within 7 days of delivery..."
-    """
+    """Convert each policy section into a flat text chunk for embedding."""
     chunks = []
-    for key, policy in policies.items():
-        chunk = f"{policy['title']}: {policy['content']}"
+    
+    if "returns" in policies:
+        ret = policies["returns"]
+        conds = ", ".join(ret.get("conditions", []))
+        chunk = f"Returns Policy: are returns allowed? {ret.get('allowed')}. Window: {ret.get('window_days')} days. Conditions: {conds}."
         chunks.append(chunk)
+        
+    if "refunds" in policies:
+        ref = policies["refunds"]
+        chunk = f"Refunds Policy: method is {ref.get('method')}. Processing time takes {ref.get('processing_time_days')} days."
+        chunks.append(chunk)
+        
+    if "support_hours" in policies:
+        chunk = f"Support Hours Policy: Support is available during {policies['support_hours']}."
+        chunks.append(chunk)
+
     return chunks
 
 
