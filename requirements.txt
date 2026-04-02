@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+groq
+edge-tts
+qdrant-client
+sentence-transformers
+python-dotenv
+python-multipart
