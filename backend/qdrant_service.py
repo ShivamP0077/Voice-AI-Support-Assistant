@@ -21,8 +21,10 @@ def initialize_collection():
 
     _chunks = load_all_chunks()
 
-    # Create collection (recreate if exists)
-    _client.recreate_collection(
+    # Create collection (delete first if it already exists)
+    if _client.collection_exists(COLLECTION_NAME):
+        _client.delete_collection(COLLECTION_NAME)
+    _client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
     )
@@ -45,10 +47,10 @@ def search(query: str, top_k: int = 3) -> list[str]:
     """Embed a query and return the top-k most similar text chunks."""
     query_embedding = _model.encode(query).tolist()
 
-    results = _client.search(
+    results = _client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_embedding,
+        query=query_embedding,
         limit=top_k,
     )
 
-    return [hit.payload["text"] for hit in results]
+    return [hit.payload["text"] for hit in results.points]

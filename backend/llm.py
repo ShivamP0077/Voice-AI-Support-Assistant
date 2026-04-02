@@ -41,7 +41,7 @@ def generate_response(user_query: str, context_chunks: list[str]) -> str:
     ]
 
     chat_completion = _client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="meta-llama/llama-4-scout-17b-16e-instruct",
         messages=messages,
         temperature=0.4,
         max_tokens=512,
