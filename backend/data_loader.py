@@ -19,7 +19,7 @@ def load_policies():
 
 
 def chunk_orders(orders):
-    """Convert each order into a flat text chunk for embedding."""
+    """Convert each order into a dictionary containing text and metadata."""
     chunks = []
     for order in orders:
         delivery_info = ""
@@ -30,33 +30,38 @@ def chunk_orders(orders):
             
         return_info = f" Return window: {order['return_window_days']} days." if order.get("return_window_days") else ""
             
-        chunk = (
+        text = (
             f"Order {order['order_id']} for user {order['user_id']}: "
             f"{order['item']}, status: {order['status']}, "
             f"{delivery_info}{return_info}"
         ).strip()
-        chunks.append(chunk)
+        
+        chunks.append({
+            "text": text,
+            "type": "order",
+            "user_id": order["user_id"]
+        })
     return chunks
 
 
 def chunk_policies(policies):
-    """Convert each policy section into a flat text chunk for embedding."""
+    """Convert each policy section into a dict containing text and metadata."""
     chunks = []
     
     if "returns" in policies:
         ret = policies["returns"]
         conds = ", ".join(ret.get("conditions", []))
-        chunk = f"Returns Policy: are returns allowed? {ret.get('allowed')}. Window: {ret.get('window_days')} days. Conditions: {conds}."
-        chunks.append(chunk)
+        text = f"Returns Policy: are returns allowed? {ret.get('allowed')}. Window: {ret.get('window_days')} days. Conditions: {conds}."
+        chunks.append({"text": text, "type": "policy", "user_id": None})
         
     if "refunds" in policies:
         ref = policies["refunds"]
-        chunk = f"Refunds Policy: method is {ref.get('method')}. Processing time takes {ref.get('processing_time_days')} days."
-        chunks.append(chunk)
+        text = f"Refunds Policy: method is {ref.get('method')}. Processing time takes {ref.get('processing_time_days')} days."
+        chunks.append({"text": text, "type": "policy", "user_id": None})
         
     if "support_hours" in policies:
-        chunk = f"Support Hours Policy: Support is available during {policies['support_hours']}."
-        chunks.append(chunk)
+        text = f"Support Hours Policy: Support is available during {policies['support_hours']}."
+        chunks.append({"text": text, "type": "policy", "user_id": None})
 
     return chunks
 

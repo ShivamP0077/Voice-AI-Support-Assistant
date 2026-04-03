@@ -436,11 +436,29 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
+        
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let silenceStart = null;
+        let vadFrameId = null;
 
         async function initMicrophone() {
             if (!globalStream) {
                 try {
                     globalStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    // Set up Web Audio API for VAD
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioContext = new AudioContext();
+                    await audioContext.resume();
+                    
+                    analyser = audioContext.createAnalyser();
+                    analyser.minDecibels = -70; // Set noise floor
+                    analyser.fftSize = 256;
+                    
+                    microphone = audioContext.createMediaStreamSource(globalStream);
+                    microphone.connect(analyser); // Do not connect to destination (no echo)
                 } catch (err) {
                     showError("Microphone access denied. Please allow microphone permissions.");
                     throw err;
@@ -475,14 +493,49 @@
                 isRecording = true;
                 recordBtn.classList.add("recording");
                 recordLabel.classList.add("recording");
-                recordLabel.textContent = "🔴 Recording... Tap to stop";
+                recordLabel.textContent = "🔴 Recording... (will stop on silence)";
                 hideError();
+                
+                // Start VAD monitoring
+                silenceStart = null;
+                checkSilence();
             } catch (err) {
                 console.error(err);
             }
         }
 
+        function checkSilence() {
+            if (!isRecording || !analyser) return;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / bufferLength;
+
+            // If average amplitude is very low, it's silence
+            if (average < 5) {
+                if (!silenceStart) {
+                    silenceStart = Date.now();
+                } else if (Date.now() - silenceStart > 2000) { // 2 seconds of silence
+                    console.log("[VAD] Silence detected, stopping recording");
+                    stopRecording();
+                    return;
+                }
+            } else {
+                silenceStart = null; // reset if volume spikes
+            }
+
+            vadFrameId = requestAnimationFrame(checkSilence);
+        }
+
         function stopRecording() {
+            if (vadFrameId) cancelAnimationFrame(vadFrameId);
+            
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
             }
@@ -491,6 +544,12 @@
             recordLabel.classList.remove("recording");
             recordLabel.textContent = "Tap to start recording";
         }
+
+        // Auto-loop: when bot finishes speaking, start listening again
+        audioPlayer.onended = () => {
+            console.log("[Loop] TTS finished playing. Auto-starting microphone...");
+            startRecording();
+        };
 
         async function sendAudioStream(blob) {
             // Hide loading completely because text streams instantly

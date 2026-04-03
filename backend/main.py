@@ -102,9 +102,9 @@ async def handle_query(audio: UploadFile = File(...)):
         )
 
     try:
-        # Step 3: Qdrant semantic search for relevant context
+        # Step 3: Qdrant semantic search for relevant context (hardcoded to U1 prototype)
         logger.info("Searching for relevant context...")
-        context_chunks = search(transcript, top_k=3)
+        context_chunks = search(transcript, top_k=3, user_id="U1")
         logger.info(f"Found {len(context_chunks)} context chunks.")
     except Exception as e:
         logger.error(f"Qdrant search failed: {e}")
@@ -175,8 +175,8 @@ async def handle_query_v2_stream(audio: UploadFile = File(...)):
             transcript = transcribe_audio(tmp_path)
             yield f"event: transcript\ndata: {json.dumps({'text': transcript})}\n\n"
 
-            # 2. Qdrant Search
-            context_chunks = search(transcript, top_k=3)
+            # 2. Qdrant Search (mock auth for prototype)
+            context_chunks = search(transcript, top_k=3, user_id="U1")
 
             # 3. LLM Streaming
             full_response = ""
